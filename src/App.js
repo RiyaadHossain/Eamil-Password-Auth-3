@@ -1,12 +1,13 @@
 import { useState } from "react";
 import Button from "react-bootstrap/Button";
 import Form from "react-bootstrap/Form";
-import { createUserWithEmailAndPassword, getAuth } from "firebase/auth";
+import { createUserWithEmailAndPassword, getAuth, signInWithEmailAndPassword } from "firebase/auth";
 import app from "./firebase.init"
 
 const auth = getAuth(app);
 
 function App() {
+  const [error, setError] = useState('')
   const [signed, setSigned] = useState(false)
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
@@ -15,16 +16,32 @@ function App() {
   } 
   const onBlurEmail = event => {
     setEmail(event.target.value)
-    console.log(event.target.value);
   }
   const onBlurPassword = event => {
     setPassword(event.target.value)
-    console.log(event.target.value);
   }
   const onFormSubmit = event => {
     event.preventDefault();
 
-    createUserWithEmailAndPassword(auth, email, password)
+    if (!/(?=.*[!@#$%^&*])/.test(password)) {
+      setError('Password Should Contain at least one Special Character')
+      return
+    } else {
+      setError('')
+    }
+
+    if (signed) {
+      signInWithEmailAndPassword(auth, email, password)
+        .then(credential => {
+          const user = credential.user
+          console.log(user);
+        })
+        .catch(error => {
+          const errorMessage = error.message
+          console.log(errorMessage);
+          setError(errorMessage)
+      })
+    }else{createUserWithEmailAndPassword(auth, email, password)
       .then(credential => {
         const user = credential.user
         console.log(user);
@@ -32,7 +49,8 @@ function App() {
       .catch(error => {
         const errorMessage = error.message
         console.log(errorMessage);
-    })
+        setError(errorMessage)
+    })}
   }
   return (
     <div className="container">
@@ -60,6 +78,7 @@ function App() {
           <Form.Group className="mb-3" controlId="formBasicCheckbox">
             <Form.Check onClick={signedIn} type="checkbox" label="Already Signed Up" />
           </Form.Group>
+          <p className="text-danger">*{error}</p>
           <Button variant="primary" type="submit">
             {signed ? "Log In" : "Sign Up"}
           </Button>
