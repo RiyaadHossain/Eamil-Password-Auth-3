@@ -1,7 +1,7 @@
 import { useState } from "react";
 import Button from "react-bootstrap/Button";
 import Form from "react-bootstrap/Form";
-import { createUserWithEmailAndPassword, getAuth, signInWithEmailAndPassword } from "firebase/auth";
+import { createUserWithEmailAndPassword, getAuth, sendEmailVerification, sendPasswordResetEmail, signInWithEmailAndPassword } from "firebase/auth";
 import app from "./firebase.init"
 
 const auth = getAuth(app);
@@ -9,8 +9,23 @@ const auth = getAuth(app);
 function App() {
   const [error, setError] = useState('')
   const [signed, setSigned] = useState(false)
+  // const [name, setName] = useState('')
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
+  const [userMessage, setUserMessage] = useState('')
+  const validateEmail = () => {
+    sendEmailVerification(auth.currentUser)
+      .then(() => {
+      setUserMessage("✔️ Varification Mail Sent");
+    })
+  }
+  const resetEmail = () => {
+    setUserMessage("")
+    sendPasswordResetEmail(auth, email)
+      .then(() => {
+      setUserMessage("✔️ Reset Mail Sent")
+    })
+  }
   const signedIn = event => {
     event.target.checked ? setSigned(true) : setSigned(false)
   } 
@@ -22,18 +37,21 @@ function App() {
   }
   const onFormSubmit = event => {
     event.preventDefault();
-
-    if (!/(?=.*[!@#$%^&*])/.test(password)) {
-      setError('Password Should Contain at least one Special Character')
+    setUserMessage('')
+    if (!email || !password ) {
+      setError('✔️ Please Input valid Email and Password')
       return
-    } else {
+    } else (
       setError('')
-    }
+    )
+
+
 
     if (signed) {
       signInWithEmailAndPassword(auth, email, password)
         .then(credential => {
           const user = credential.user
+          setUserMessage('✔️ Logged In')
           console.log(user);
         })
         .catch(error => {
@@ -41,8 +59,16 @@ function App() {
           console.log(errorMessage);
           setError(errorMessage)
       })
-    }else{createUserWithEmailAndPassword(auth, email, password)
+    } else {
+      if (!/(?=.*[!@#$%^&*])/.test(password)) {
+        setError('❌ Password Should Contain at least one Special Character')
+        return
+      } else {
+        setError('')
+      }
+      createUserWithEmailAndPassword(auth, email, password)
       .then(credential => {
+        validateEmail()
         const user = credential.user
         console.log(user);
       })
@@ -78,10 +104,12 @@ function App() {
           <Form.Group className="mb-3" controlId="formBasicCheckbox">
             <Form.Check onClick={signedIn} type="checkbox" label="Already Signed Up" />
           </Form.Group>
-          <p className="text-danger">*{error}</p>
+          <p className="text-danger">{error}</p>
+          <p className="text-success">{userMessage}</p>
           <Button variant="primary" type="submit">
             {signed ? "Log In" : "Sign Up"}
           </Button>
+          {!signed ? "" : <Button onClick={resetEmail} className="ms-3" variant="warning" type="submit">Reset Password</Button>}
         </Form>
       </div>
     </div>
