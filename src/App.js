@@ -20,6 +20,7 @@ function App() {
     })
   }
   const resetEmail = () => {
+    setError("")
     setUserMessage("")
     sendPasswordResetEmail(auth, email)
       .then(() => {
@@ -38,8 +39,9 @@ function App() {
   const onFormSubmit = event => {
     event.preventDefault();
     setUserMessage('')
+    setError('')
     if (!email || !password ) {
-      setError('✔️ Please Input valid Email and Password')
+      setError('❌ Please Input valid Email and Password')
       return
     } else (
       setError('')
